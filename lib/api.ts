@@ -1,7 +1,7 @@
 // API utility functions for interacting with the backend
 
-// Base API URL - change this to match your backend URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Base API URL - Using local Next.js API routes instead of external backend
+const API_BASE_URL = '/api';
 
 // Get the JWT token from local storage
 export function getToken(): string | null {

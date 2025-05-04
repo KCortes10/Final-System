@@ -1,39 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Mock database of uploaded images
+const mockUploads = [
+  {
+    id: 'upload_1',
+    title: 'Beach Sunset',
+    description: 'A beautiful sunset at the beach',
+    url: '/images/sunset.jpg',
+    thumbnail: '/images/sunset_thumb.jpg',
+    isUserUpload: true,
+    userId: 'user_123',
+    price: '15.00',
+    category: 'nature',
+    filename: 'sunset.jpg'
+  },
+  {
+    id: 'upload_2',
+    title: 'Mountain View',
+    description: 'Scenic mountain landscape',
+    url: '/images/mountain.jpg',
+    thumbnail: '/images/mountain_thumb.jpg',
+    isUserUpload: true,
+    userId: 'user_123',
+    price: '20.00',
+    category: 'landscape',
+    filename: 'mountain.jpg'
+  }
+];
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const id = params.id;
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     
-    // Get the auth token from the request headers
-    const authHeader = request.headers.get('Authorization') || '';
+    // Find the image by ID
+    const image = mockUploads.find(img => img.id === id);
     
-    // Forward the request to the backend API
-    const response = await fetch(`${API_BASE_URL}/uploads/${id}/metadata`, {
-      headers: {
-        'Authorization': authHeader
-      }
-    });
-    
-    if (!response.ok) {
-      // Return the error from the backend
-      const errorData = await response.json();
+    if (!image) {
       return NextResponse.json(
-        { error: errorData.error || 'Failed to fetch image metadata' },
-        { status: response.status }
+        { success: false, message: 'Image not found' },
+        { status: 404 }
       );
     }
     
-    // Return the image metadata
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(image);
   } catch (error) {
-    console.error('Error fetching image metadata:', error);
+    console.error(`Error fetching metadata for image ${params.id}:`, error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, message: 'Failed to fetch image metadata' },
       { status: 500 }
     );
   }
