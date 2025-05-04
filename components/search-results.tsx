@@ -142,15 +142,16 @@ export function SearchResults({
     setIsLoading(true)
 
     try {
-      // Use the actual API upload function
-      console.log("Attempting to upload image:", {
+      // Log debugging information
+      console.log("Attempting to upload image to:", API_BASE_URL + '/uploads');
+      console.log("Upload data:", {
         title: uploadTitle,
         description: uploadDescription,
         category: uploadCategory,
         price: uploadPrice,
         fileSize: uploadFile.size,
         fileType: uploadFile.type
-      })
+      });
       
       // Create FormData with proper price field
       const formData = new FormData();
@@ -160,8 +161,24 @@ export function SearchResults({
       formData.append('category', uploadCategory);
       formData.append('price', uploadPrice);
       
-      // Call the backend directly to ensure price is included
-      const response = await fetch('/api/uploads', {
+      // Try using the imageAPI utility first, which has better error handling
+      try {
+        const uploadResult = await imageAPI.uploadImage(uploadFile, {
+          title: uploadTitle,
+          description: uploadDescription || '',
+          category: uploadCategory,
+          price: uploadPrice
+        });
+        
+        console.log("Upload successful via imageAPI:", uploadResult);
+        handleUploadSuccess(uploadResult, true);
+        return;
+      } catch (apiError) {
+        console.error("Failed to upload via imageAPI, trying direct fetch:", apiError);
+      }
+      
+      // Fallback to direct fetch if imageAPI fails
+      const response = await fetch(API_BASE_URL + '/uploads', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -170,45 +187,55 @@ export function SearchResults({
       });
       
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        const errorText = await response.text();
+        console.error('Upload API error:', errorText);
+        throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
       }
       
       const data = await response.json();
       console.log("Upload successful:", data);
-
-      setShowUploadModal(false)
-      setUploadFile(null)
-      setUploadTitle("")
-      setUploadDescription("")
-      setUploadPreview(null)
-      setUploadPrice("")
-      setUploadCategory("nature")
       
-      // Show success message
-      alert('Your image has been uploaded to the marketplace for sale!');
-      
-      // Reload to show the new image in search results
-      window.location.reload()
+      handleUploadSuccess(data, true);
+    } catch (err) {
+      console.error("Upload error details:", err);
+      let errorMsg = "Failed to upload image. Please try again.";
+      if (err instanceof Error) {
+        errorMsg = err.message || errorMsg;
+      }
+      alert(`Upload failed: ${errorMsg}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Update localStorage pending purchase to include currency
+  // Handle successful upload - extracted to avoid code duplication
+  const handleUploadSuccess = (data: any, skipLocalStorage: boolean = false) => {
+    setShowUploadModal(false);
+    setUploadFile(null);
+    setUploadTitle("");
+    setUploadDescription("");
+    setUploadPreview(null);
+    setUploadPrice("");
+    setUploadCategory("nature");
+    
+    // Show success message
+    alert('Your image has been uploaded to the marketplace for sale!');
+    
+    // Update localStorage pending purchase to include currency if not skipped
+    if (!skipLocalStorage) {
       const pendingPurchase = {
-        id: data.id,
-        title: data.title,
-        price: data.price,
+        id: data.id || data.image?.id,
+        title: data.title || data.image?.title,
+        price: data.price || data.image?.price,
         currency: '₱'
       };
+      
       localStorage.setItem('pendingPurchase', JSON.stringify(pendingPurchase));
-    } catch (err) {
-      console.error("Upload error details:", err)
-      let errorMsg = "Failed to upload image. Please try again."
-      if (err instanceof Error) {
-        errorMsg = err.message || errorMsg
-      }
-      alert(`Upload failed: ${errorMsg}`)
-    } finally {
-      setIsLoading(false)
     }
-  }
+    
+    // Reload to show the new image in search results
+    window.location.reload();
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
