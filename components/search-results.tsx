@@ -16,6 +16,9 @@ import { Eye, EyeOff, Lock, User } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+// Define API_BASE_URL directly in this file rather than importing it
+const API_BASE_URL = '/api';
+
 interface SearchResultsProps {
   images: UnsplashImage[]
   query: string

@@ -37,7 +37,7 @@ const getDemoImageUrl = (id: string) => {
     'https://images.unsplash.com/photo-1575936123452-b67c3203c357',
     'https://images.unsplash.com/photo-1567095761054-7a02e69e5c43',
     'https://images.unsplash.com/photo-1545239351-1141bd82e8a6',
-    'https://images.unsplash.com/photo-1533743983669-94fa5c4338ec',
+    'https://images.unsplash.com/photo-1533743983669-94fa5c42e8ec',
     'https://images.unsplash.com/photo-1524293581917-878a6d017c71'
   ];
   
@@ -62,9 +62,12 @@ export default function ProfilePage() {
   // Check authentication status on component mount
   useEffect(() => {
     const token = localStorage.getItem('token');
+    
     if (!token) {
-      // Redirect to login if not authenticated
-      router.push('/auth/login?returnUrl=/profile');
+      // Instead of redirecting to a non-existent auth page, show login modal
+      // We'll handle this by showing a message in the UI
+      setIsAuthenticated(false);
+      setIsLoading(false);
       return;
     }
 
@@ -74,20 +77,20 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       try {
         const response = await authAPI.getProfile();
-        setUsername(response.user.username);
-        setEmail(response.user.email);
+        setUsername(response.username || response.user?.username || "User");
+        setEmail(response.email || response.user?.email || "");
       } catch (error) {
         console.error("Error fetching profile:", error);
-        // Token might be invalid, redirect to login
+        // Token might be invalid
         localStorage.removeItem('token');
-        router.push('/auth/login?returnUrl=/profile');
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProfile();
-  }, [router]);
+  }, []);
 
   // Get downloaded, purchased, and uploaded images
   useEffect(() => {
@@ -330,6 +333,62 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse">Loading profile...</div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container flex items-center justify-between py-4">
+            <Link
+              href="/"
+              className="flex items-center gap-2 transition-colors hover:text-violet-600 dark:hover:text-violet-400"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/50">
+                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <span className="text-lg font-bold">SearchIt</span>
+            </Link>
+
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+
+        <main className="container flex-1 flex items-center justify-center">
+          <Card className="w-full max-w-md border-violet-200 dark:border-violet-800">
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center text-center">
+                <div className="rounded-full bg-violet-100 dark:bg-violet-900/50 p-4 mb-4">
+                  <User className="h-8 w-8 text-violet-600 dark:text-violet-400" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Sign In Required</h2>
+                <p className="text-muted-foreground mb-6">
+                  Please sign in to view your profile and manage your images.
+                </p>
+                <div className="flex flex-col gap-3 w-full">
+                  <Button 
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+                    onClick={() => router.push('/')}
+                  >
+                    Return to Home
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => router.push('/marketplace')}
+                  >
+                    Browse Marketplace
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
       </div>
     );
   }
