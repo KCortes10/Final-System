@@ -159,6 +159,16 @@ export function MarketplaceCard({
       if (!purchasedImages.includes(id)) {
         purchasedImages.push(id);
         localStorage.setItem('purchasedImages', JSON.stringify(purchasedImages));
+        
+        // Also store basic metadata about the image for consistent display in profile
+        const storedMetadata = JSON.parse(localStorage.getItem('purchasedImagesMetadata') || '{}');
+        storedMetadata[id] = {
+          id,
+          title: title || `Image ${id.substring(0, 8)}`,
+          authorName,
+          price
+        };
+        localStorage.setItem('purchasedImagesMetadata', JSON.stringify(storedMetadata));
       }
       
       // Update UI state
@@ -208,6 +218,17 @@ export function MarketplaceCard({
       if (!downloadedImages.includes(id)) {
         downloadedImages.push(id)
         localStorage.setItem('downloadedImages', JSON.stringify(downloadedImages))
+        
+        // Store metadata for consistent display in profile
+        const storedMetadata = JSON.parse(localStorage.getItem('purchasedImagesMetadata') || '{}');
+        storedMetadata[id] = {
+          id,
+          title: title || `Image ${id.substring(0, 8)}`,
+          authorName,
+          price
+        };
+        localStorage.setItem('purchasedImagesMetadata', JSON.stringify(storedMetadata));
+        
         setIsDownloaded(true)
         
         // Show success message and offer to view profile

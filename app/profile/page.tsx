@@ -79,6 +79,12 @@ export default function ProfilePage() {
         const response = await authAPI.getProfile();
         setUsername(response.username || response.user?.username || "User");
         setEmail(response.email || response.user?.email || "");
+        
+        // Store metadata from API response to ensure consistency in Vercel deployment
+        if (response.purchasedMetadata && Object.keys(response.purchasedMetadata).length > 0) {
+          // Save metadata to localStorage to ensure it's available for future operations
+          localStorage.setItem('purchasedImagesMetadata', JSON.stringify(response.purchasedMetadata));
+        }
       } catch (error) {
         console.error("Error fetching profile:", error);
         // Token might be invalid
@@ -98,15 +104,24 @@ export default function ProfilePage() {
     const downloadedIds = JSON.parse(localStorage.getItem('downloadedImages') || '[]');
     const purchasedIds = JSON.parse(localStorage.getItem('purchasedImages') || '[]');
     
+    // Get stored metadata for purchased and downloaded images
+    const storedMetadata = JSON.parse(localStorage.getItem('purchasedImagesMetadata') || '{}');
+    
+    // Also get the user ID for later use
+    const userId = localStorage.getItem('userId');
+    
     // We need to fetch actual image data for each ID
     const fetchImagesData = async () => {
       try {
-        const purchasedImagesData = [];
-        const downloadedImagesData = [];
+        const purchasedImagesData: any[] = [];
+        const downloadedImagesData: any[] = [];
         
         // Fetch actual image data for each purchased ID
         for (const id of purchasedIds) {
           try {
+            // If we have stored metadata for this image, use it for consistent display
+            const metadata = storedMetadata[id];
+            
             // First try to get from backend API (user uploads)
             const apiResponse = await fetch(`/api/uploads/${id}/metadata`);
             
@@ -119,48 +134,72 @@ export default function ProfilePage() {
                   small: imageData.url,
                   regular: imageData.url
                 },
-                description: imageData.title,
-                title: imageData.title,
+                description: metadata?.title || imageData.title || `Image ${id.substring(0, 8)}`,
+                title: metadata?.title || imageData.title || `Image ${id.substring(0, 8)}`,
                 user: {
-                  name: "User Upload"
+                  name: metadata?.authorName || imageData.author || "User Upload"
                 },
+                price: metadata?.price,
                 isUserUpload: true
               });
             } else {
-              // It might be an Unsplash image
+              // It might be an Unsplash image - create a consistent representation
               const unsplashImage = {
                 id,
                 urls: {
                   small: getDemoImageUrl(id),
                   regular: getDemoImageUrl(id)
                 },
-                description: `Image ${id.substring(0, 8)}`,
+                description: metadata?.title || `Image ${id.substring(0, 8)}`,
+                title: metadata?.title || `Image ${id.substring(0, 8)}`,
                 user: {
-                  name: "Unsplash Artist"
+                  name: metadata?.authorName || "Unsplash Artist"
                 },
+                price: metadata?.price,
                 isUnsplash: true
               };
               purchasedImagesData.push(unsplashImage);
             }
           } catch (error) {
             console.error(`Error fetching image data for ID ${id}:`, error);
-            // Add a placeholder for the image that couldn't be fetched
+            // Add a placeholder for the image that couldn't be fetched, but use stored metadata if available
+            const metadata = storedMetadata[id];
             purchasedImagesData.push({
               id,
               urls: {
                 small: getDemoImageUrl(id),
                 regular: getDemoImageUrl(id)
               },
-              description: `Image ${id.substring(0, 8)}`,
+              description: metadata?.title || `Image ${id.substring(0, 8)}`,
+              title: metadata?.title || `Image ${id.substring(0, 8)}`,
               user: {
-                name: "Unknown"
-              }
+                name: metadata?.authorName || "Unknown"
+              },
+              price: metadata?.price
             });
           }
         }
         
-        // Do the same for downloaded images
+        // Do the same for downloaded images, but make sure we don't duplicate images
+        // that are both purchased and downloaded
+        const processedIds = new Set<string>();
+        
         for (const id of downloadedIds) {
+          // Skip if we already processed this ID in purchased images to avoid duplicates
+          if (purchasedIds.includes(id) && purchasedImagesData.some(img => img.id === id)) {
+            continue;
+          }
+          
+          // Skip if we already added this to downloadedImagesData
+          if (processedIds.has(id)) {
+            continue;
+          }
+          
+          processedIds.add(id);
+          
+          // If we have stored metadata for this image, use it for consistent display
+          const metadata = storedMetadata[id];
+          
           try {
             // First try to get from backend API (user uploads)
             const apiResponse = await fetch(`/api/uploads/${id}/metadata`);
@@ -174,24 +213,25 @@ export default function ProfilePage() {
                   small: imageData.url,
                   regular: imageData.url
                 },
-                description: imageData.title,
-                title: imageData.title,
+                description: metadata?.title || imageData.title || `Image ${id.substring(0, 8)}`,
+                title: metadata?.title || imageData.title || `Image ${id.substring(0, 8)}`,
                 user: {
-                  name: "User Upload"
+                  name: metadata?.authorName || imageData.author || "User Upload"
                 },
                 isUserUpload: true
               });
             } else {
               // It might be an Unsplash image
               const unsplashImage = {
-      id,
-      urls: {
+                id,
+                urls: {
                   small: getDemoImageUrl(id),
                   regular: getDemoImageUrl(id)
-      },
-      description: `Image ${id.substring(0, 8)}`,
-      user: {
-        name: "Unsplash Artist"
+                },
+                description: metadata?.title || `Image ${id.substring(0, 8)}`,
+                title: metadata?.title || `Image ${id.substring(0, 8)}`,
+                user: {
+                  name: metadata?.authorName || "Unsplash Artist"
                 },
                 isUnsplash: true
               };
@@ -206,9 +246,10 @@ export default function ProfilePage() {
                 small: getDemoImageUrl(id),
                 regular: getDemoImageUrl(id)
               },
-              description: `Image ${id.substring(0, 8)}`,
+              description: metadata?.title || `Image ${id.substring(0, 8)}`,
+              title: metadata?.title || `Image ${id.substring(0, 8)}`,
               user: {
-                name: "Unknown"
+                name: metadata?.authorName || "Unknown"
               }
             });
           }
@@ -222,21 +263,18 @@ export default function ProfilePage() {
       }
     };
     
-    // Don't use demo images, just fetch the actual data
+    // Fetch image data if there are any IDs to fetch
     if (purchasedIds.length > 0 || downloadedIds.length > 0) {
       fetchImagesData();
     }
     
     // Fetch user uploaded images if authenticated
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && userId) {
       const fetchUserUploads = async () => {
         try {
-          const userId = localStorage.getItem('userId');
-          
-          if (userId) {
-            // Use Next.js API route which will proxy to the backend
-            const response = await fetch(`/api/uploads/user?userId=${userId}`, {
+          // Use Next.js API route which will proxy to the backend
+          const response = await fetch(`/api/uploads/user?userId=${userId}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -244,31 +282,32 @@ export default function ProfilePage() {
           
           if (response.ok) {
             const data = await response.json();
-              const mappedImages = data.images.map((img: any) => {
-                // Ensure we have a full URL for the image (fallback to a demo if issues)
-                let imageUrl = img.url || img.thumbnail_url;
-                
-                // Check if the URL is relative or doesn't have a scheme/host
-                if (imageUrl && !imageUrl.startsWith('http')) {
-                  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-                  imageUrl = `${API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-                }
-                
-                // If still no valid URL, use a demo image
-                if (!imageUrl) {
-                  imageUrl = getDemoImageUrl(img.id);
-                }
-                
-                return {
-                  ...img,
-                  urls: {
-                    small: imageUrl,
-                    regular: imageUrl
-                  }
-                };
-              });
-              setUploadedImages(mappedImages || []);
-            }
+            const mappedImagesArray = data.images.map((img: any) => {
+              // Ensure we have a full URL for the image (fallback to a demo if issues)
+              let imageUrl = img.url || img.thumbnail_url;
+              
+              // Check if the URL is relative or doesn't have a scheme/host
+              if (imageUrl && !imageUrl.startsWith('http')) {
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                imageUrl = `${API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+              }
+              
+              // If still no valid URL, use a demo image
+              if (!imageUrl) {
+                imageUrl = getDemoImageUrl(img.id);
+              }
+              
+              return {
+                ...img,
+                urls: {
+                  small: imageUrl,
+                  regular: imageUrl
+                },
+                title: img.title || `Image ${img.id.substring(0, 8)}`,
+                description: img.description || img.title || `Image ${img.id.substring(0, 8)}`
+              };
+            });
+            setUploadedImages(mappedImagesArray || []);
           }
         } catch (error) {
           console.error("Error fetching user uploads:", error);
@@ -305,10 +344,21 @@ export default function ProfilePage() {
         downloadedImages.push(image.id);
         localStorage.setItem('downloadedImages', JSON.stringify(downloadedImages));
         
-        // Update the state so UI reflects the change
-        setDownloadedImages(prev => {
+        // Store metadata for consistent display
+        const storedMetadata = JSON.parse(localStorage.getItem('purchasedImagesMetadata') || '{}');
+        if (!storedMetadata[image.id]) {
+          storedMetadata[image.id] = {
+            id: image.id,
+            title: image.title || image.description || `Image ${image.id.substring(0, 8)}`,
+            authorName: image.user?.name || "Unknown"
+          };
+          localStorage.setItem('purchasedImagesMetadata', JSON.stringify(storedMetadata));
+        }
+        
+        // Update the state so UI reflects the change immediately
+        setDownloadedImages((prev: any[]) => {
           // Only add the image if it's not already in the array
-          if (!prev.some(img => img.id === image.id)) {
+          if (!prev.some((img: any) => img.id === image.id)) {
             return [...prev, image];
           }
           return prev;
@@ -500,16 +550,24 @@ export default function ProfilePage() {
                               target.src = getDemoImageUrl(image.id);
                             }}
                           />
+                          <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                            Purchased
+                          </div>
+                          {image.price && (
+                            <div className="absolute bottom-2 right-2 bg-violet-900/80 text-white text-xs px-2 py-1 rounded-full">
+                              ₱{image.price}
+                            </div>
+                          )}
                         </div>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <p className="font-medium truncate">
-                              {image.description || `Image ${image.id.substring(0, 8)}`}
+                              {image.title || image.description || `Image ${image.id.substring(0, 8)}`}
                             </p>
-                            <div className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full dark:bg-green-900/40 dark:text-green-300">
-                              Purchased
-                            </div>
                           </div>
+                          <p className="text-xs text-muted-foreground truncate mt-1">
+                            By {image.user?.name || "Unknown"}
+                          </p>
                         </CardContent>
                         <CardFooter className="p-4 pt-0 flex gap-2">
                           <Button 
@@ -517,6 +575,7 @@ export default function ProfilePage() {
                             className="w-1/2"
                             onClick={() => handleViewDetails(image)}
                           >
+                            <ZoomIn className="h-4 w-4 mr-2" />
                             View Details
                           </Button>
                           <Button 
@@ -562,16 +621,19 @@ export default function ProfilePage() {
                               target.src = getDemoImageUrl(image.id);
                             }}
                           />
+                          <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                            Downloaded
+                          </div>
                         </div>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <p className="font-medium truncate">
-                              {image.description || `Image ${image.id.substring(0, 8)}`}
+                              {image.title || image.description || `Image ${image.id.substring(0, 8)}`}
                             </p>
-                            <div className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full dark:bg-blue-900/40 dark:text-blue-300">
-                              Downloaded
-                            </div>
                           </div>
+                          <p className="text-xs text-muted-foreground truncate mt-1">
+                            By {image.user?.name || "Unknown"}
+                          </p>
                         </CardContent>
                         <CardFooter className="p-4 pt-0 flex gap-2">
                           <Button 
@@ -579,6 +641,7 @@ export default function ProfilePage() {
                             className="w-1/2"
                             onClick={() => handleViewDetails(image)}
                           >
+                            <ZoomIn className="h-4 w-4 mr-2" />
                             View Details
                           </Button>
                           <Button 
@@ -613,7 +676,7 @@ export default function ProfilePage() {
                       <Card key={image.id} className="overflow-hidden border-violet-200 hover:border-violet-400 transition-colors dark:border-violet-800 dark:hover:border-violet-600">
                         <div className="relative aspect-[4/3] overflow-hidden">
                           <Image
-                            src={image.thumbnail_url || image.url || `https://source.unsplash.com/${image.id}/400x300`}
+                            src={image.thumbnail_url || image.url || image.urls?.small || getDemoImageUrl(image.id)}
                             alt={image.title || 'Uploaded image'}
                             fill
                             className="object-cover transition-transform hover:scale-105"
@@ -623,16 +686,24 @@ export default function ProfilePage() {
                               target.src = getDemoImageUrl(image.id);
                             }}
                           />
+                          <div className="absolute top-2 right-2 bg-violet-500 text-white text-xs px-2 py-1 rounded-full">
+                            Your Upload
+                          </div>
+                          {image.price && (
+                            <div className="absolute bottom-2 right-2 bg-violet-900/80 text-white text-xs px-2 py-1 rounded-full">
+                              ₱{image.price}
+                            </div>
+                          )}
                         </div>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <p className="font-medium truncate">
                               {image.title || `Image ${image.id.substring(0, 8)}`}
                             </p>
-                            <div className="bg-violet-100 text-violet-700 text-xs px-2 py-1 rounded-full dark:bg-violet-900/40 dark:text-violet-300">
-                              ₱{image.price || '0'}
-                            </div>
                           </div>
+                          <p className="text-xs text-muted-foreground truncate mt-1">
+                            {image.description || "No description provided"}
+                          </p>
                         </CardContent>
                         <CardFooter className="p-4 pt-0">
                           <Button 
@@ -640,6 +711,7 @@ export default function ProfilePage() {
                             className="w-full"
                             onClick={() => window.open(`/marketplace?image=${image.id}`, '_blank')}
                           >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
                             View in Marketplace
                           </Button>
                         </CardFooter>

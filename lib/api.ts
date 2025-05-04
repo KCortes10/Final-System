@@ -166,6 +166,7 @@ export const authAPI = {
     if (typeof window !== 'undefined') {
       const userId = localStorage.getItem('userId');
       const userEmail = localStorage.getItem('userEmail');
+      const imagesMetadata = localStorage.getItem('purchasedImagesMetadata');
       
       // Build query parameters
       const params = new URLSearchParams();

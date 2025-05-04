@@ -25,13 +25,25 @@ export async function GET(request: Request) {
     // If token contains user_id, use it
     const userId = url.searchParams.get('userId') || 'user_123';
     
+    // Get image metadata, if available
+    const imageMetadata = url.searchParams.get('imageMetadata');
+    let purchasedMetadata = {};
+    if (imageMetadata) {
+      try {
+        purchasedMetadata = JSON.parse(imageMetadata);
+      } catch (error) {
+        console.error('Error parsing image metadata:', error);
+      }
+    }
+    
     return NextResponse.json({
       id: userId,
       username: username,
       email: email,
       purchasedImages: [],
       downloadedImages: [],
-      uploadedImages: []
+      uploadedImages: [],
+      purchasedMetadata: purchasedMetadata || {}
     });
     
   } catch (error) {
