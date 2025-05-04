@@ -41,6 +41,13 @@ export default function LoginPage() {
     try {
       // Use the actual API login function
       const response = await authAPI.login(email, password)
+      
+      // Make sure the email entered by the user is stored locally
+      // so it can be used in the profile view (API routes/auth.ts will use this)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userEmail', email);
+      }
+      
       console.log("Login successful:", response)
       
       if (action === 'purchase' && pendingPurchase) {

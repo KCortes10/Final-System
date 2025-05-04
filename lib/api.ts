@@ -30,26 +30,24 @@ export function isAuthenticated(): boolean {
   return !!getToken();
 }
 
-// Make API requests with authentication headers if token exists
+// Make an API request
 async function apiRequest(
-  endpoint: string,
-  method: string = 'GET',
-  data: any = null,
-  isFormData: boolean = false
+  endpoint: string, 
+  method: string = 'GET', 
+  data: any = null, 
+  includeToken: boolean = true
 ): Promise<any> {
   const url = `${API_BASE_URL}${endpoint}`;
-  console.log(`Making ${method} request to: ${url}`);
   
-  const token = getToken();
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
   
-  const headers: HeadersInit = {};
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  if (!isFormData && data) {
-    headers['Content-Type'] = 'application/json';
+  if (includeToken) {
+    const token = getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
   }
   
   const options: RequestInit = {
@@ -57,61 +55,70 @@ async function apiRequest(
     headers,
   };
   
-  if (data) {
-    if (isFormData) {
-      options.body = data;
-      
-      // For debugging - log FormData contents
-      if (data instanceof FormData) {
-        console.log('FormData contents:', {
-          fields: [...data.keys()],
-          hasFile: data.has('file'),
-          fileType: data.get('file') instanceof File ? (data.get('file') as File).type : 'not a file'
-        });
-      }
-    } else {
-      options.body = JSON.stringify(data);
-      console.log('Request payload:', JSON.stringify(data));
-    }
+  if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    options.body = JSON.stringify(data);
   }
   
   try {
-    console.log('Sending request with options:', JSON.stringify({
-      method,
-      headers,
-      bodyType: data ? (isFormData ? 'FormData' : 'JSON') : 'none',
-      url
-    }));
-    
     const response = await fetch(url, options);
-    console.log(`Response status: ${response.status}`);
     
-    // Check if the response is JSON
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      const json = await response.json();
-      
-      if (!response.ok) {
-        console.error('API error response:', json);
-        throw new Error(json.message || `API request failed with status ${response.status}`);
-      }
-      
-      return json;
-    }
-    
-    // For non-JSON responses like image downloads
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error (non-JSON):', errorText);
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      // Handle error responses
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'API request failed');
     }
     
-    return response;
+    return response.json();
   } catch (error) {
-    console.error('API request error:', error);
+    console.error(`API error for ${endpoint}:`, error);
     throw error;
   }
 }
+
+// Uploads API functions
+export const uploadsAPI = {
+  // Upload an image
+  async uploadImage(file: File, title: string, description: string, price: number): Promise<any> {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('price', price.toString());
+    
+    const token = getToken();
+    const headers: HeadersInit = {
+      Authorization: token ? `Bearer ${token}` : '',
+    };
+    
+    const response = await fetch(`${API_BASE_URL}/uploads`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Upload failed');
+    }
+    
+    return response.json();
+  },
+  
+  // Get images by user
+  async getImagesByUser(userId: string): Promise<any> {
+    return apiRequest(`/uploads/user?userId=${userId}`);
+  },
+  
+  // Get image by id
+  async getImageById(id: string): Promise<any> {
+    return apiRequest(`/uploads/${id}`);
+  },
+  
+  // Get all images
+  async getAllImages(): Promise<any> {
+    return apiRequest('/uploads');
+  },
+};
 
 // Auth API functions
 export const authAPI = {
@@ -132,6 +139,10 @@ export const authAPI = {
       if (response.user && response.user.id) {
         localStorage.setItem('userId', response.user.id);
       }
+      // Store email for profile consistency
+      if (response.user && response.user.email) {
+        localStorage.setItem('userEmail', response.user.email);
+      }
     }
     
     return response;
@@ -143,12 +154,31 @@ export const authAPI = {
     // Also remove userId and other user-specific data
     if (typeof window !== 'undefined') {
       localStorage.removeItem('userId');
+      localStorage.removeItem('userEmail');
     }
   },
   
   // Get the current user's profile
   async getProfile(): Promise<any> {
-    return apiRequest('/auth/profile');
+    // Add user info from localStorage as query parameters for profile consistency
+    let endpoint = '/auth/profile';
+    
+    if (typeof window !== 'undefined') {
+      const userId = localStorage.getItem('userId');
+      const userEmail = localStorage.getItem('userEmail');
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (userId) params.append('userId', userId);
+      if (userEmail) params.append('email', userEmail);
+      
+      // Add query string if we have params
+      if (params.toString()) {
+        endpoint = `${endpoint}?${params.toString()}`;
+      }
+    }
+    
+    return apiRequest(endpoint);
   },
   
   // Update the current user's profile

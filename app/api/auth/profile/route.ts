@@ -13,11 +13,22 @@ export async function GET(request: Request) {
       );
     }
     
-    // Mock user profile
+    // Extract user info from token or localStorage
+    // For demo, we'll use query parameters to simulate retrieving user data
+    const url = new URL(request.url);
+    
+    // Get email from token or use demo value
+    const email = url.searchParams.get('email') || 'demo@example.com';
+    // Generate username from email (like in login)
+    const username = email.split('@')[0];
+    
+    // If token contains user_id, use it
+    const userId = url.searchParams.get('userId') || 'user_123';
+    
     return NextResponse.json({
-      id: 'user_123',
-      username: 'demouser',
-      email: 'demo@example.com',
+      id: userId,
+      username: username,
+      email: email,
       purchasedImages: [],
       downloadedImages: [],
       uploadedImages: []
@@ -50,7 +61,7 @@ export async function PUT(request: Request) {
       message: 'Profile updated successfully',
       user: {
         ...body,
-        id: 'user_123'
+        id: body.id || 'user_123'
       }
     });
     

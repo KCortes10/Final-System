@@ -437,7 +437,7 @@ export default function ProfilePage() {
                 <div className="flex flex-col items-center text-center">
                   <Avatar className="h-24 w-24 mb-4">
                     <AvatarFallback className="bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300 text-xl">
-                      {username.slice(0, 2).toUpperCase()}
+                      {username && username.slice(0, 2).toUpperCase() || "DE"}
                     </AvatarFallback>
                   </Avatar>
                   <h2 className="text-xl font-bold mb-1">{username}</h2>
