@@ -1,0 +1,50 @@
+[
+  {
+    "id": "df8b98be-b3bb-4bb5-96aa-5a982f921077",
+    "title": "error",
+    "description": "",
+    "filename": "error-404-not-found-text-design-vector_d10e8ace2ee54e3eb8f7317da2328b5a.jpg",
+    "user_id": "b010839f-d375-4eb6-9f58-15c8b4e40310",
+    "path": "C:\\Users\\Clark\\Desktop\\KEMMMILYYYY\\backend\\uploads\\error-404-not-found-text-design-vector_d10e8ace2ee54e3eb8f7317da2328b5a.jpg",
+    "price": 7.0,
+    "category": "other",
+    "rating": 4.0,
+    "created_at": "2025-05-04T11:28:47.892181"
+  },
+  {
+    "id": "4a7a6221-d0ee-4ef1-9307-473c78d51194",
+    "title": "jiji",
+    "description": "",
+    "filename": "searchit-image-bsSIk3LV_NE_1_daf5896eb47a4885aa554f5defb80586.jpg",
+    "user_id": "71139209-bf63-42c6-8b43-88d218c4f13d",
+    "path": "C:\\Users\\Clark\\Desktop\\KEMMMILYYYY\\backend\\uploads\\searchit-image-bsSIk3LV_NE_1_daf5896eb47a4885aa554f5defb80586.jpg",
+    "price": 20.0,
+    "category": "nature",
+    "rating": 3.0,
+    "created_at": "2025-05-04T12:48:23.723476"
+  },
+  {
+    "id": "5a7b805b-827a-45d5-b1d2-f9bc1b891b41",
+    "title": "catog",
+    "description": "",
+    "filename": "cat12333_0263fc76f72347d7babda8d92130e8b5.jpg",
+    "user_id": "71139209-bf63-42c6-8b43-88d218c4f13d",
+    "path": "C:\\Users\\Clark\\Desktop\\KEMMMILYYYY\\backend\\uploads\\cat12333_0263fc76f72347d7babda8d92130e8b5.jpg",
+    "price": 30.0,
+    "category": "animals",
+    "rating": 4.0,
+    "created_at": "2025-05-04T12:49:49.068650"
+  },
+  {
+    "id": "8e6bbefc-8618-4df5-a7a6-df1e0e1c9c0e",
+    "title": "ambot",
+    "description": "",
+    "filename": "cat12333_d8085a85172347f0be975a1a16d1ff1b.jpg",
+    "user_id": "71139209-bf63-42c6-8b43-88d218c4f13d",
+    "path": "C:\\Users\\Clark\\Desktop\\KEMMMILYYYY\\backend\\uploads\\cat12333_d8085a85172347f0be975a1a16d1ff1b.jpg",
+    "price": 20.0,
+    "category": "nature",
+    "rating": 4.0,
+    "created_at": "2025-05-04T12:54:28.267543"
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "b010839f-d375-4eb6-9f58-15c8b4e40310",
+    "username": "testuser2",
+    "email": "test2@example.com",
+    "password_hash": "$2b$12$WZyjxDNPPh7pRyyYfPWBIOCfxus3tcmAvoc2or862vfztqzLeOB1i",
+    "created_at": "2025-05-04T10:42:32.862955"
+  },
+  {
+    "id": "a0cb14ce-5768-4303-bb6b-ffafa97e11fa",
+    "username": "te",
+    "email": "te@example.com",
+    "password_hash": "Test1234",
+    "created_at": "2025-05-04T12:13:08.593843"
+  },
+  {
+    "id": "71139209-bf63-42c6-8b43-88d218c4f13d",
+    "username": "tes3232",
+    "email": "tes3232@example.com",
+    "password_hash": "Test1234",
+    "created_at": "2025-05-04T12:42:13.168797"
+  }
+]
