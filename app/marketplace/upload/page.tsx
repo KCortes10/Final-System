@@ -122,13 +122,13 @@ export default function UploadPage() {
       
       // Try using the imageAPI utility first
       try {
-        const response = await imageAPI.uploadImage(imageFile, {
-          title,
-          description,
+      const response = await imageAPI.uploadImage(imageFile, {
+        title,
+        description,
           category,
           price
         });
-        
+
         console.log("Upload successful via imageAPI:", response);
         
         // Redirect to marketplace after successful upload
@@ -173,8 +173,8 @@ export default function UploadPage() {
         
         const data = await response.json();
         console.log("Upload successful via direct fetch:", data);
-        
-        // Redirect to marketplace after successful upload
+      
+      // Redirect to marketplace after successful upload
         router.push('/marketplace');
       }
     } catch (err) {

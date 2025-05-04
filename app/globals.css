@@ -56,6 +56,34 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Make images responsive by default */
+  img {
+    @apply max-w-full h-auto;
+  }
+  /* Ensure inputs are properly visible on mobile */
+  input, button, select, textarea {
+    @apply text-base;
+  }
+  /* Better mobile tap target size */
+  button, a, [role="button"] {
+    @apply cursor-pointer;
+  }
+}
+
+@layer utilities {
+  /* Common responsive utilities */
+  .responsive-container {
+    @apply px-4 sm:px-6 md:px-8 mx-auto;
+  }
+  .text-responsive {
+    @apply text-sm sm:text-base md:text-lg;
+  }
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row;
+  }
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4;
+  }
 }
 
 @keyframes fade-in {
@@ -105,4 +133,15 @@
 
 .pulse-shadow {
   animation: pulse-light 2s infinite ease-in-out;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .container {
+    @apply px-4;
+  }
+  
+  .pulse-shadow {
+    animation: none; /* Disable some animations on mobile for better performance */
+  }
 }

@@ -329,14 +329,14 @@ export function MarketplaceResults({
         try {
           // Call the backend directly as fallback
           const response = await fetch(`/api/uploads`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            body: formData
-          });
-          
-          if (!response.ok) {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
             let errorMessage = 'Failed to upload image';
             try {
               const errorData = await response.json();
@@ -352,9 +352,9 @@ export function MarketplaceResults({
               }
             }
             throw new Error(errorMessage);
-          }
-          
-          const data = await response.json();
+      }
+      
+      const data = await response.json();
           console.log("Upload successful via direct fetch:", data);
 
           setShowUploadModal(false);
@@ -364,11 +364,11 @@ export function MarketplaceResults({
           setUploadPreview(null);
           setUploadPrice("");
           setUploadCategory("nature");
-          
-          // Show success message
-          alert('Your image has been uploaded to the marketplace for sale!');
-          
-          // Reload to show the new image
+      
+      // Show success message
+      alert('Your image has been uploaded to the marketplace for sale!');
+      
+      // Reload to show the new image
           window.location.reload();
         } catch (fetchError) {
           console.error("Direct fetch upload error:", fetchError);

@@ -60,6 +60,15 @@ async function apiRequest(
   if (data) {
     if (isFormData) {
       options.body = data;
+      
+      // For debugging - log FormData contents
+      if (data instanceof FormData) {
+        console.log('FormData contents:', {
+          fields: [...data.keys()],
+          hasFile: data.has('file'),
+          fileType: data.get('file') instanceof File ? (data.get('file') as File).type : 'not a file'
+        });
+      }
     } else {
       options.body = JSON.stringify(data);
       console.log('Request payload:', JSON.stringify(data));
@@ -70,7 +79,8 @@ async function apiRequest(
     console.log('Sending request with options:', JSON.stringify({
       method,
       headers,
-      bodyType: data ? (isFormData ? 'FormData' : 'JSON') : 'none'
+      bodyType: data ? (isFormData ? 'FormData' : 'JSON') : 'none',
+      url
     }));
     
     const response = await fetch(url, options);
@@ -83,7 +93,7 @@ async function apiRequest(
       
       if (!response.ok) {
         console.error('API error response:', json);
-        throw new Error(json.message || 'API request failed');
+        throw new Error(json.message || `API request failed with status ${response.status}`);
       }
       
       return json;

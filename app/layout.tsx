@@ -10,7 +10,13 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "SearchIt - Image Search Engine",
   description: "A modern image search engine with dark and light mode themes",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    viewportFit: 'cover',
+  },
 }
 
 export default function RootLayout({

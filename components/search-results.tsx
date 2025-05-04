@@ -194,7 +194,7 @@ export function SearchResults({
       
       const data = await response.json();
       console.log("Upload successful:", data);
-      
+
       handleUploadSuccess(data, true);
     } catch (err) {
       console.error("Upload error details:", err);
@@ -217,10 +217,10 @@ export function SearchResults({
     setUploadPreview(null);
     setUploadPrice("");
     setUploadCategory("nature");
-    
-    // Show success message
-    alert('Your image has been uploaded to the marketplace for sale!');
-    
+      
+      // Show success message
+      alert('Your image has been uploaded to the marketplace for sale!');
+      
     // Update localStorage pending purchase to include currency if not skipped
     if (!skipLocalStorage) {
       const pendingPurchase = {

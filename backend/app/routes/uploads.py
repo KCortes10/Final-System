@@ -131,7 +131,7 @@ def get_images():
         images = Image.get_by_user_id(user_id)
     else:
         images = Image.get_all_images()
-        
+    
     # Get host URL for full image URLs
     host_url = request.host_url.rstrip('/')
     
@@ -179,7 +179,7 @@ def get_image_metadata(image_id):
     image = Image.get_by_id(image_id)
     if not image:
         return jsonify({'error': 'Image not found'}), 404
-
+    
     # Get host URL for full image URLs
     host_url = request.host_url.rstrip('/')
     
