@@ -36,6 +36,8 @@ export async function GET(request: Request) {
     const category = url.searchParams.get('category');
     const query = url.searchParams.get('q');
     
+    console.log('GET /api/uploads - Query params:', { userId, category, query });
+    
     // Filter images based on query parameters
     let filteredImages = [...mockUploads];
     
@@ -56,6 +58,8 @@ export async function GET(request: Request) {
       );
     }
     
+    console.log(`Returning ${filteredImages.length} images`);
+    
     return NextResponse.json(filteredImages);
   } catch (error) {
     console.error('Error fetching uploads:', error);
@@ -67,50 +71,77 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  console.log('POST /api/uploads - Received upload request');
+  
   try {
     // In a real app, you would handle file upload here
-    // Mock successful upload response
-    const formData = await request.formData();
-    const title = formData.get('title')?.toString() || 'Untitled';
-    const description = formData.get('description')?.toString() || '';
-    const price = formData.get('price')?.toString() || '10.00';
-    const category = formData.get('category')?.toString() || 'other';
-    
     // Get authorization header
     const authHeader = request.headers.get('Authorization') || '';
     if (!authHeader.startsWith('Bearer ')) {
+      console.error('Unauthorized upload attempt - missing or invalid token');
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Unauthorized - Please log in to upload images' },
         { status: 401 }
       );
     }
     
-    // Create a mock image upload
-    const newImageId = 'upload_' + Date.now();
-    const newImage = {
-      id: newImageId,
-      title,
-      description,
-      url: '/images/placeholder.jpg',
-      thumbnail: '/images/placeholder_thumb.jpg',
-      isUserUpload: true,
-      userId: 'user_123', // In a real app, extract from token
-      price,
-      category,
-      filename: 'placeholder.jpg'
-    };
+    // Log headers for debugging
+    console.log('Request headers:', Object.fromEntries([...request.headers.entries()]));
     
-    // In a real app, you would save this to a database
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Image uploaded successfully',
-      image: newImage
-    });
+    try {
+      // Extract form data
+      const formData = await request.formData();
+      console.log('FormData fields:', [...formData.keys()]);
+      
+      const title = formData.get('title')?.toString() || 'Untitled';
+      const description = formData.get('description')?.toString() || '';
+      const price = formData.get('price')?.toString() || '10.00';
+      const category = formData.get('category')?.toString() || 'other';
+      const file = formData.get('file');
+      
+      console.log('Upload data:', { title, description, category, price, hasFile: !!file });
+      
+      if (!file) {
+        return NextResponse.json(
+          { success: false, message: 'No file provided' },
+          { status: 400 }
+        );
+      }
+      
+      // Create a mock image upload
+      const newImageId = 'upload_' + Date.now();
+      const newImage = {
+        id: newImageId,
+        title,
+        description,
+        url: '/images/placeholder.jpg',
+        thumbnail: '/images/placeholder_thumb.jpg',
+        isUserUpload: true,
+        userId: 'user_123', // In a real app, extract from token
+        price,
+        category,
+        filename: 'placeholder.jpg'
+      };
+      
+      // In a real app, you would save this to a database
+      console.log('Successfully created new image:', newImageId);
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Image uploaded successfully',
+        image: newImage
+      });
+    } catch (formError) {
+      console.error('Error processing form data:', formError);
+      return NextResponse.json(
+        { success: false, message: `Error processing upload data: ${formError instanceof Error ? formError.message : 'Unknown error'}` },
+        { status: 400 }
+      );
+    }
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to upload image' },
+      { success: false, message: `Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }

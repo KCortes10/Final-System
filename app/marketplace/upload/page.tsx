@@ -25,6 +25,21 @@ export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+    
+    // Redirect if not logged in
+    if (!token) {
+      setError("You must be logged in to upload images");
+      setTimeout(() => {
+        router.push('/marketplace');
+      }, 2000);
+    }
+  }, [router]);
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +77,16 @@ export default function UploadPage() {
     e.preventDefault()
     setError("")
     
+    // Check authentication first
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError("You must be logged in to upload images. Redirecting to marketplace...");
+      setTimeout(() => {
+        router.push('/marketplace');
+      }, 2000);
+      return;
+    }
+    
     if (!imageFile) {
       setError("Please select an image to upload")
       return
@@ -85,23 +110,78 @@ export default function UploadPage() {
     setIsLoading(true)
 
     try {
-      // Use the actual API upload function
-      const response = await imageAPI.uploadImage(imageFile, {
+      // Log debugging information
+      console.log("Attempting to upload image with:", {
         title,
-        description,
+        description: description || '',
         category,
-        price
-      })
-
-      console.log("Upload successful:", response)
+        price,
+        fileSize: imageFile.size,
+        fileType: imageFile.type
+      });
       
-      // Redirect to marketplace after successful upload
-      router.push('/marketplace')
+      // Try using the imageAPI utility first
+      try {
+        const response = await imageAPI.uploadImage(imageFile, {
+          title,
+          description,
+          category,
+          price
+        });
+        
+        console.log("Upload successful via imageAPI:", response);
+        
+        // Redirect to marketplace after successful upload
+        router.push('/marketplace');
+        return;
+      } catch (apiError) {
+        console.error("Failed to upload via imageAPI, trying direct fetch:", apiError);
+        
+        // Fall back to direct fetch approach
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        formData.append('title', title);
+        formData.append('description', description || '');
+        formData.append('category', category);
+        formData.append('price', price);
+        
+        const response = await fetch('/api/uploads', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          let errorMessage = 'Failed to upload image';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch {
+            // If response is not JSON, try to get text
+            try {
+              const errorText = await response.text();
+              errorMessage = errorText || errorMessage;
+            } catch {
+              // If we can't get response text either, use status
+              errorMessage = `Failed to upload image: ${response.status} ${response.statusText}`;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+        
+        const data = await response.json();
+        console.log("Upload successful via direct fetch:", data);
+        
+        // Redirect to marketplace after successful upload
+        router.push('/marketplace');
+      }
     } catch (err) {
-      console.error("Upload error:", err)
-      setError(err instanceof Error ? err.message : "Failed to upload image. Please try again.")
+      console.error("Upload error:", err);
+      setError(err instanceof Error ? err.message : "Failed to upload image. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 

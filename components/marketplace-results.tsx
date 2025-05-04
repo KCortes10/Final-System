@@ -295,46 +295,86 @@ export function MarketplaceResults({
       formData.append('price', uploadPrice);
       
       // Import API_BASE_URL
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const API_BASE_URL = '/api';
       
-      // Call the backend directly to ensure price is included
-      const response = await fetch(`${API_BASE_URL}/uploads`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Upload API error:', errorText);
+      // Try using the imageAPI utility first, which has better error handling
+      try {
+        const uploadResult = await imageAPI.uploadImage(uploadFile, {
+          title: uploadTitle,
+          description: uploadDescription || '',
+          category: uploadCategory,
+          price: uploadPrice
+        });
+        
+        console.log("Upload successful via imageAPI:", uploadResult);
+        
+        setShowUploadModal(false);
+        setUploadFile(null);
+        setUploadTitle("");
+        setUploadDescription("");
+        setUploadPreview(null);
+        setUploadPrice("");
+        setUploadCategory("nature");
+        
+        // Show success message
+        alert('Your image has been uploaded to the marketplace for sale!');
+        
+        // Reload to show the new image
+        window.location.reload();
+        return;
+      } catch (apiError) {
+        console.error("Failed to upload via imageAPI, trying direct fetch:", apiError);
+        
+        // Fall back to direct fetch approach
         try {
-          // Try to parse as JSON to get the error message
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.message || 'Failed to upload image');
-        } catch (parseError) {
-          // If not valid JSON, use the raw text
-          throw new Error(`Failed to upload image: ${errorText}`);
+          // Call the backend directly as fallback
+          const response = await fetch(`/api/uploads`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+          
+          if (!response.ok) {
+            let errorMessage = 'Failed to upload image';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorMessage;
+            } catch {
+              // If response is not JSON, try to get text
+              try {
+                const errorText = await response.text();
+                errorMessage = errorText || errorMessage;
+              } catch {
+                // If we can't get response text either, use status
+                errorMessage = `Failed to upload image: ${response.status} ${response.statusText}`;
+              }
+            }
+            throw new Error(errorMessage);
+          }
+          
+          const data = await response.json();
+          console.log("Upload successful via direct fetch:", data);
+
+          setShowUploadModal(false);
+          setUploadFile(null);
+          setUploadTitle("");
+          setUploadDescription("");
+          setUploadPreview(null);
+          setUploadPrice("");
+          setUploadCategory("nature");
+          
+          // Show success message
+          alert('Your image has been uploaded to the marketplace for sale!');
+          
+          // Reload to show the new image
+          window.location.reload();
+        } catch (fetchError) {
+          console.error("Direct fetch upload error:", fetchError);
+          throw fetchError; // Re-throw to be caught by outer catch
         }
       }
-      
-      const data = await response.json();
-      console.log("Upload successful:", data);
-
-      setShowUploadModal(false)
-      setUploadFile(null)
-      setUploadTitle("")
-      setUploadDescription("")
-      setUploadPreview(null)
-      setUploadPrice("")
-      setUploadCategory("nature")
-      
-      // Show success message
-      alert('Your image has been uploaded to the marketplace for sale!');
-      
-      // Reload to show the new image
-      window.location.reload()
     } catch (err) {
       console.error("Upload error details:", err)
       let errorMsg = "Failed to upload image. Please try again."
